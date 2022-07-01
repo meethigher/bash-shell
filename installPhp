@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -e
+function downloadPhp() {
+  #  wget --no-check-certificate https://www.php.net/distributions/php-7.4.30.tar.gz
+  yum -y install libxml2 libxml2-devel sqlite-devel libtool libcurl libcurl-devel
+  tar -zxf php-7.4.30.tar.gz
+  cd php-7.4.30
+  path=$(pwd)
+  ./configure --with-apxs2=/usr/local/apache2/bin/apxs --with-pdo-mysql --with-curl --with-openssl
+  make && make install
+  # cp php.ini-development /usr/local/lib/php.ini # 一般会自动生成，不需要此处了
+  # 更新apache使用的php7 module
+  libtool --finish "$path/libs"
+}
+
+downloadPhp

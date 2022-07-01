@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+#
+# 安装httpd服务器
+# Copyright 2022 meethigher
+set -e
+
+# 安装apr
+function installApr() {
+  wget --no-check-certificate https://mirrors.tuna.tsinghua.edu.cn/apache/apr/apr-1.7.0.tar.gz
+  tar -zxf apr-1.7.0.tar.gz
+  cd apr-1.7.0
+  #  ./configure --prefix=/etc/apr/
+  ./configure
+  make && make install
+  cd ..
+}
+
+# 安装apr-util
+function installAprUtil() {
+  wget --no-check-certificate https://mirrors.tuna.tsinghua.edu.cn/apache/apr/apr-util-1.6.1.tar.gz
+  tar -zxf apr-util-1.6.1.tar.gz
+  cd apr-util-1.6.1
+  #./configure --prefix=/etc/apr-util --with-apr=/etc/apr
+  ./configure --with-apr=/usr/local/apr
+  make && make install
+  cd ..
+}
+
+# 安装httpd
+function installHttpd() {
+  wget --no-check-certificate https://mirrors.tuna.tsinghua.edu.cn/apache/httpd/httpd-2.4.54.tar.gz
+  tar -zxf httpd-2.4.54.tar.gz
+  cd httpd-2.4.54
+  #编译
+  ./configure \
+    --with-include-apr \
+    --disable-userdir \
+    --enable-headers \
+    --with-mpm=worker \
+    --enable-modules=most \
+    --enable-so \
+    --enable-deflate \
+    --enable-defate=shared \
+    --enable-expires-shared \
+    --enable-rewrite=shared \
+    --enable-static-support \
+    --with-apr=/usr/local/apr \
+    --with-apr-util=/usr/local/apr/bin \
+    --with-ssl \
+    --with-z
+
+  make && make install
+  cd ..
+
+  configHttpd "/usr/local/apache2/bin/httpd"
+}
+
+function configHttpd() {
+  if [ -s $1 ]; then
+    cat >/usr/lib/systemd/system/httpd.service <<EOF
+[Unit]
+Description=httpd
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=$1 -k start
+ExecReload=$1 -k restart
+ExecStop=$1 -k stop
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  fi
+}
+
+mkdir test
+cd test
+yum -y install wget gcc zlib zlib-devel pcre-devel openssl openssl-devel expat-devel
+installApr
+installAprUtil
+installHttpd
+cd ..
+rm -rf test
+echo "httpd安装成功"
+echo "httpd运行命令:"
+echo "--启动/关闭/重启：systemctl start|stop|restart httpd"
+echo "--自启动/非自启动: systemctl enable|disable httpd"
+echo "--测试配置文件：/usr/local/apache2/bin/httpd -t"
