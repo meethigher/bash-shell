@@ -2,11 +2,19 @@
 set -e
 function downloadPhp() {
   #  wget --no-check-certificate https://www.php.net/distributions/php-7.4.30.tar.gz
-  yum -y install libxml2 libxml2-devel sqlite-devel libtool libcurl libcurl-devel
+  yum -y install libxml2 libxml2-devel sqlite-devel libtool libcurl libcurl-devel libpng-devel libjpeg-devel freetype freetype-devel
+  # curl -o libzip-1.3.2.tar.gz https://libzip.org/download/libzip-1.3.2.tar.gz
+  tar -zxvf libzip-1.3.2.tar.gz
+  cd libzip-1.3.2
+  ./configure
+  make && make install
+  # 不配置这个编译php时，是找不到zip的
+  export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig/"
+  cd ..
   tar -zxf php-7.4.30.tar.gz
   cd php-7.4.30
   path=$(pwd)
-  ./configure --with-apxs2=/usr/local/apache2/bin/apxs --with-pdo-mysql --with-curl --with-openssl
+  ./configure --with-apxs2=/usr/local/apache2/bin/apxs --with-pdo-mysql --with-curl --with-openssl --enable-gd --with-jpeg=/usr/local/libjpeg/ --with-freetype=/usr/local/freetype/ --with-zip=/usr/local/lib/libzip
   make && make install
   # cp php.ini-development /usr/local/lib/php.ini # 一般会自动生成，不需要此处了
   # 更新apache使用的php7 module
